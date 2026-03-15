@@ -11,12 +11,18 @@ on:
 env:
   GCP_PROJECT: oldschoolrunescapetool
   REGION: us-central1
+  REGISTRY_REGION: us-central1  # Set independently if the Artifact Registry repo is in a different region
 
 jobs:
   deploy:
     name: Deploy via OpenTofu
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    # Gated by the "production" GitHub Environment.
+    # Configure required reviewers at:
+    #   Settings → Environments → production → Required reviewers
+    environment: production
 
     permissions:
       contents: read
@@ -43,7 +49,7 @@ jobs:
         run: tofu init
 
       - name: OpenTofu Plan
-        run: tofu plan -var="image_tag=${{ github.event.workflow_run.head_sha }}" -out=tfplan
+        run: tofu plan -var="project_id=${{ env.GCP_PROJECT }}" -var="region=${{ env.REGION }}" -var="registry_region=${{ env.REGISTRY_REGION }}" -var="image_tag=${{ github.event.workflow_run.head_sha }}" -out=tfplan
 
       - name: OpenTofu Apply
         run: tofu apply -auto-approve tfplan

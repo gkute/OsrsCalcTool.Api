@@ -1,3 +1,8 @@
+output "registry_url" {
+  description = "Artifact Registry repository URL (use as the Docker image prefix in CI)"
+  value       = "${local.registry_region}-docker.pkg.dev/${var.project_id}/${local.repository_id}"
+}
+
 output "service_url" {
   description = "Internal URL of the Cloud Run service"
   value       = google_cloud_run_v2_service.api.uri

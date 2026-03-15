@@ -1,5 +1,38 @@
 locals {
-  image = "us-central1-docker.pkg.dev/${var.project_id}/osrs-api/osrs-api:${var.image_tag}"
+  registry_region  = var.registry_region != "" ? var.registry_region : var.region
+  repository_id    = "osrs-api"
+  image            = "${local.registry_region}-docker.pkg.dev/${var.project_id}/${local.repository_id}/osrs-api:${var.image_tag}"
+
+  required_apis = toset([
+    "artifactregistry.googleapis.com",
+    "iam.googleapis.com",
+    "run.googleapis.com",
+  ])
+}
+
+# Enable required GCP APIs — in a new project these are off by default and
+# resources will fail to create without them.
+# disable_on_destroy = false so that a `tofu destroy` doesn't break other
+# workloads in the same project that depend on these APIs.
+resource "google_project_service" "apis" {
+  for_each = local.required_apis
+
+  project                    = var.project_id
+  service                    = each.value
+  disable_on_destroy         = false
+  disable_dependent_services = false
+}
+
+# Artifact Registry repository — must exist before the CI build/push job runs.
+# Defined here so a fresh project is fully bootstrapped by a single `tofu apply`.
+resource "google_artifact_registry_repository" "api" {
+  project       = var.project_id
+  location      = local.registry_region
+  repository_id = local.repository_id
+  format        = "DOCKER"
+  description   = "Docker images for the OSRS API service"
+
+  depends_on = [google_project_service.apis]
 }
 
 # Dedicated service account for the API container — principle of least privilege
@@ -7,6 +40,8 @@ resource "google_service_account" "api" {
   account_id   = "osrs-api-sa"
   display_name = "OSRS API Cloud Run Service Account"
   project      = var.project_id
+
+  depends_on = [google_project_service.apis]
 }
 
 resource "google_cloud_run_v2_service" "api" {
@@ -46,4 +81,24 @@ resource "google_cloud_run_v2_service" "api" {
       }
     }
   }
+
+  depends_on = [google_artifact_registry_repository.api]
+}
+
+# ---------------------------------------------------------------------------
+# Invoker IAM
+# The primary caller (osrs-ui-sa) is bound by the UI infra module
+# (osrs-calc-ui/infra/main.tf → google_cloud_run_v2_service_iam_member.ui_invokes_api)
+# using a data source, keeping cross-repo SA email references out of this module.
+# Additional principals (e.g. developers, test runners) can be passed via
+# var.invoker_principals.
+# ---------------------------------------------------------------------------
+resource "google_cloud_run_v2_service_iam_member" "invokers" {
+  for_each = toset(var.invoker_principals)
+
+  project  = var.project_id
+  location = var.region
+  name     = google_cloud_run_v2_service.api.name
+  role     = "roles/run.invoker"
+  member   = each.value
 }

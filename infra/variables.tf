@@ -20,6 +20,23 @@ variable "image_tag" {
   default     = "latest"
 }
 
+variable "manage_apis" {
+  description = <<-EOT
+    When true, Tofu will enable the required GCP APIs via google_project_service.
+    Requires the WIF service account to have roles/serviceusage.serviceUsageAdmin
+    (or a custom role with serviceusage.services.enable + serviceusage.services.list).
+
+    The canonical list of services is defined in local.required_apis in main.tf.
+
+    Set to false if the APIs are already enabled or if you prefer to manage them
+    out-of-band. To enable them manually, run:
+      gcloud services enable $(tofu output -raw required_apis_csv) --project=<project_id>
+    or inspect local.required_apis in main.tf and enable each service listed there.
+  EOT
+  type        = bool
+  default     = true
+}
+
 variable "invoker_principals" {
   description = <<-EOT
     List of IAM member strings (e.g. "serviceAccount:foo@project.iam.gserviceaccount.com")

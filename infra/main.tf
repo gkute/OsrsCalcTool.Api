@@ -15,7 +15,7 @@ locals {
 # disable_on_destroy = false so that a `tofu destroy` doesn't break other
 # workloads in the same project that depend on these APIs.
 resource "google_project_service" "apis" {
-  for_each = local.required_apis
+  for_each = var.manage_apis ? local.required_apis : setsubtract(local.required_apis, local.required_apis)
 
   project                    = var.project_id
   service                    = each.value

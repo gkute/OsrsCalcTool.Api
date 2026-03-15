@@ -12,6 +12,10 @@ env:
   GCP_PROJECT: oldschoolrunescapetool
   REGION: us-central1
   REGISTRY_REGION: us-central1  # Set independently if the Artifact Registry repo is in a different region
+  # Set to true in repo/environment variables when deploying to a brand-new project
+  # that needs its GCP APIs enabled for the first time. Requires the WIF SA to hold
+  # roles/serviceusage.serviceUsageAdmin. Safe to leave false once APIs are enabled.
+  MANAGE_APIS: ${{ vars.MANAGE_APIS || 'false' }}
 
 jobs:
   deploy:
@@ -49,7 +53,7 @@ jobs:
         run: tofu init
 
       - name: OpenTofu Plan
-        run: tofu plan -var="project_id=${{ env.GCP_PROJECT }}" -var="region=${{ env.REGION }}" -var="registry_region=${{ env.REGISTRY_REGION }}" -var="image_tag=${{ github.event.workflow_run.head_sha }}" -out=tfplan
+        run: tofu plan -var="project_id=${{ env.GCP_PROJECT }}" -var="region=${{ env.REGION }}" -var="registry_region=${{ env.REGISTRY_REGION }}" -var="manage_apis=${{ env.MANAGE_APIS }}" -var="image_tag=${{ github.event.workflow_run.head_sha }}" -out=tfplan
 
       - name: OpenTofu Apply
         run: tofu apply -auto-approve tfplan

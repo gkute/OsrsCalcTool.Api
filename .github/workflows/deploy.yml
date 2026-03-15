@@ -49,7 +49,7 @@ jobs:
         run: tofu init
 
       - name: OpenTofu Plan
-        run: tofu plan -var="project_id=${{ env.GCP_PROJECT }}" -var="region=${{ env.REGION }}" -var="registry_region=${{ env.REGISTRY_REGION }}" -var="image_tag=${{ github.event.workflow_run.head_sha }}" -out=tfplan
+        run: tofu plan -var="project_id=${{ env.GCP_PROJECT }}" -var="region=${{ env.REGION }}" -var="registry_region=${{ env.REGISTRY_REGION }}" -var="manage_apis=false" -var="image_tag=${{ github.event.workflow_run.head_sha }}" -out=tfplan
 
       - name: OpenTofu Apply
         run: tofu apply -auto-approve tfplan

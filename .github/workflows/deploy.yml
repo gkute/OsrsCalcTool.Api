@@ -52,6 +52,21 @@ jobs:
       - name: OpenTofu Init
         run: tofu init
 
+      - name: Import existing Artifact Registry repository
+        # Adopts a pre-existing repository into Tofu state so apply doesn't
+        # attempt to recreate it and get a 409. Safe to re-run — import is a
+        # no-op (exit 0) if the resource is already tracked in state.
+        run: |
+          tofu import \
+            -var="project_id=${{ env.GCP_PROJECT }}" \
+            -var="region=${{ env.REGION }}" \
+            -var="registry_region=${{ env.REGISTRY_REGION }}" \
+            -var="manage_apis=${{ env.MANAGE_APIS }}" \
+            -var="image_tag=${{ github.event.workflow_run.head_sha }}" \
+            google_artifact_registry_repository.api \
+            "projects/${{ env.GCP_PROJECT }}/locations/${{ env.REGISTRY_REGION }}/repositories/osrs-api" \
+          || true
+
       - name: OpenTofu Plan
         run: tofu plan -var="project_id=${{ env.GCP_PROJECT }}" -var="region=${{ env.REGION }}" -var="registry_region=${{ env.REGISTRY_REGION }}" -var="manage_apis=${{ env.MANAGE_APIS }}" -var="image_tag=${{ github.event.workflow_run.head_sha }}" -out=tfplan
 

@@ -14,19 +14,40 @@ public class OsrsHiscoreService
     ];
 
     private readonly HttpClient _httpClient;
+    private readonly ILogger<OsrsHiscoreService> _logger;
 
-    public OsrsHiscoreService(HttpClient httpClient)
+    public OsrsHiscoreService(HttpClient httpClient, ILogger<OsrsHiscoreService> logger)
     {
         _httpClient = httpClient;
+        _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("OsrsCalcTool.Api/1.0 (Web API)");
+        _logger = logger;
     }
 
     public async Task<List<HiscoreEntry>> GetHiscoresAsync(string playerName, CancellationToken cancellationToken = default)
     {
         var url = $"https://secure.runescape.com/m=hiscore_oldschool/index_lite.ws?player={Uri.EscapeDataString(playerName)}";
-        var response = await _httpClient.GetStringAsync(url, cancellationToken);
+
+        HttpResponseMessage response;
+        try
+        {
+            response = await _httpClient.GetAsync(url, cancellationToken);
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "Network error calling OSRS hiscores for player {PlayerName}", playerName);
+            throw;
+        }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogWarning("OSRS hiscores returned {StatusCode} for player {PlayerName}", response.StatusCode, playerName);
+            return [];
+        }
+
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
 
         var entries = new List<HiscoreEntry>();
-        var lines = response.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        var lines = body.Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
         for (var i = 0; i < lines.Length && i < SkillNames.Length; i++)
         {

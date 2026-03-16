@@ -48,10 +48,11 @@ resource "google_cloud_run_v2_service" "api" {
   name     = "osrs-api"
   location = var.region
 
-  # Restrict to internal traffic only — not reachable from the public internet.
-  # Same-project Cloud Run services (UI) can still reach this URL when they
-  # present a valid SA identity token (roles/run.invoker granted in the UI infra).
-  ingress = "INGRESS_TRAFFIC_INTERNAL_ONLY"
+  # INGRESS_TRAFFIC_ALL — the API is secured by Cloud Run IAM, not network
+  # ingress. Any caller without a valid osrs-ui-sa OIDC identity token gets a
+  # 403. Using ALL traffic avoids the need for Cloud NAT (~$32/month) that
+  # would be required if the UI used Direct VPC Egress with INTERNAL_ONLY.
+  ingress = "INGRESS_TRAFFIC_ALL"
 
   template {
     service_account = google_service_account.api.email

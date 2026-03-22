@@ -45,7 +45,7 @@ public static class FiremakingData
         new() { Name = "Mahogany pyre logs", Category = "Pyre Log", LevelRequired = 55, Experience = 210, Members = true, ItemId = 3450, Notes = "Mahogany logs + sacred oil" },
         new() { Name = "Yew pyre logs", Category = "Pyre Log", LevelRequired = 65, Experience = 225, Members = true, ItemId = 3452, Notes = "Yew logs + sacred oil" },
         new() { Name = "Magic pyre logs", Category = "Pyre Log", LevelRequired = 80, Experience = 404.5, Members = true, ItemId = 3454, Notes = "Magic logs + sacred oil" },
-        new() { Name = "Redwood pyre logs", Category = "Pyre Log", LevelRequired = 95, Experience = 500, Members = true, ItemId = 22302, Notes = "Redwood logs + sacred oil" },
+        new() { Name = "Redwood pyre logs", Category = "Pyre Log", LevelRequired = 95, Experience = 500, Members = true, ItemId = 19672, Notes = "Redwood logs + sacred oil" },
     ];
 
     public static IEnumerable<string> Categories =>

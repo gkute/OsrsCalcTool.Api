@@ -48,15 +48,12 @@ resource "google_cloud_run_v2_service" "api" {
   name     = "osrs-api"
   location = var.region
 
-  # INGRESS_TRAFFIC_ALL — allows requests from the public internet.
-  # Network-level isolation via INGRESS_TRAFFIC_INTERNAL_ONLY requires a
-  # Serverless VPC Access Connector or Direct VPC Egress on the calling
-  # service, otherwise Cloud Run-to-Cloud Run calls in the same project are
-  # still treated as external and get 404.
-  # Security is enforced by Cloud Run IAM: only principals with
-  # roles/run.invoker (osrs-ui-sa) can call this service; all other requests
-  # are rejected with 403 before reaching the container.
-  ingress = "INGRESS_TRAFFIC_ALL"
+  # INGRESS_TRAFFIC_INTERNAL_ONLY — only accepts traffic that originates from
+  # within the project's VPC.  The UI Cloud Run service uses Direct VPC Egress
+  # (ALL_TRAFFIC) so its outbound requests to this service are routed through
+  # the project's default VPC and treated as internal by Cloud Run's ingress.
+  # External callers (internet) receive 404 and the container is never invoked.
+  ingress = "INGRESS_TRAFFIC_INTERNAL_ONLY"
 
   template {
     service_account = google_service_account.api.email

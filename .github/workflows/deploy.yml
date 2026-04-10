@@ -7,6 +7,12 @@ on:
       - completed
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Docker image tag to deploy (commit SHA or 'latest')"
+        required: false
+        default: "latest"
 
 env:
   GCP_PROJECT: oldschoolrunescapetool
@@ -21,7 +27,7 @@ jobs:
   deploy:
     name: Deploy via OpenTofu
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
 
     # Gated by the "production" GitHub Environment.
     # Configure required reviewers at:
@@ -62,13 +68,13 @@ jobs:
             -var="region=${{ env.REGION }}" \
             -var="registry_region=${{ env.REGISTRY_REGION }}" \
             -var="manage_apis=${{ env.MANAGE_APIS }}" \
-            -var="image_tag=${{ github.event.workflow_run.head_sha }}" \
+            -var="image_tag=${{ github.event.workflow_run.head_sha || inputs.image_tag || 'latest' }}" \
             google_artifact_registry_repository.api \
             "projects/${{ env.GCP_PROJECT }}/locations/${{ env.REGISTRY_REGION }}/repositories/osrs-api" \
           || true
 
       - name: OpenTofu Plan
-        run: tofu plan -var="project_id=${{ env.GCP_PROJECT }}" -var="region=${{ env.REGION }}" -var="registry_region=${{ env.REGISTRY_REGION }}" -var="manage_apis=${{ env.MANAGE_APIS }}" -var="image_tag=${{ github.event.workflow_run.head_sha }}" -out=tfplan
+        run: tofu plan -var="project_id=${{ env.GCP_PROJECT }}" -var="region=${{ env.REGION }}" -var="registry_region=${{ env.REGISTRY_REGION }}" -var="manage_apis=${{ env.MANAGE_APIS }}" -var="image_tag=${{ github.event.workflow_run.head_sha || inputs.image_tag || 'latest' }}" -out=tfplan
 
       - name: OpenTofu Apply
         run: tofu apply -auto-approve tfplan

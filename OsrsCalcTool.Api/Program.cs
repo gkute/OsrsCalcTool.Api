@@ -34,7 +34,10 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
 }
 
-app.UseHttpsRedirection();
+// HTTPS redirection is intentionally omitted: the API runs on HTTP inside Cloud Run
+// (port 8080) and TLS is terminated by Cloud Run's frontend before requests reach the
+// container.  Adding UseHttpsRedirection() here would cause the container to issue 301
+// redirects for every inbound request, breaking the nginx BFF proxy.
 app.UseCors("Angular");
 app.MapControllers();
 

@@ -48,11 +48,12 @@ resource "google_cloud_run_v2_service" "api" {
   name     = "osrs-api"
   location = var.region
 
-  # INGRESS_TRAFFIC_INTERNAL_ONLY — only accepts internal ingress, such as
-  # requests from internal or VPC-connected sources that Cloud Run treats as
-  # internal. This avoids exposing the service directly to the public internet.
-  # External callers generally receive 404 and the container is not invoked.
-  ingress = "INGRESS_TRAFFIC_INTERNAL_ONLY"
+  # INGRESS_TRAFFIC_ALL — accepts traffic from any source (public internet).
+  # Access is still restricted via IAM: only service accounts with
+  # roles/run.invoker (e.g. osrs-ui-sa) can invoke this service.
+  # Cloud Run enforces IAM auth at the load balancer before the container
+  # is invoked, so unauthorized callers are rejected without waking the pod.
+  ingress = "INGRESS_TRAFFIC_ALL"
 
   template {
     service_account = google_service_account.api.email
